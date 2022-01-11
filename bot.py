@@ -69,7 +69,7 @@ async def resign(ctx: commands.context.Context):
     for session in sessions:
         if session.id == ctx.author.id or session.other_id == ctx.author.id:
             session.end()
-            sessions.remove(session)                                # TODO: End the game on discord too
+            sessions.remove(session)
             await ctx.send(f"<@{ctx.author.id}> resigned the game")
             return
 
@@ -81,7 +81,11 @@ async def input(_id: int, ctx: commands.context.Context, session: game.Session):
     msg: discord.message.Message = await bot.wait_for('message', check=check(_id))
     msg_content = msg.content
 
-    move = chess.Move.from_uci(msg_content)
+    try:
+        move = chess.Move.from_uci(msg_content)
+    except ValueError:
+        await msg.reply("Invalid move")
+        raise ValueError
 
     if not session.board.is_legal(move):
         await msg.reply("Not a legal move")
@@ -92,13 +96,15 @@ async def input(_id: int, ctx: commands.context.Context, session: game.Session):
 async def play_game(ctx: commands.context.Context, session: game.Session):
     _id = 0
 
-    while True:
+    while session.is_active():
         try:
             await input(session.id if _id % 2 == 0 else session.other_id, ctx, session)
             await draw_board(ctx, session)
             _id += 1
         except ValueError:
             pass
+
+    del session
 
 async def play_ai(ctx: commands.context.Context, _id: int):
     session = game.Session(ctx, _id, bot.user.id)
@@ -117,7 +123,7 @@ async def play_ai(ctx: commands.context.Context, _id: int):
     await draw_board(ctx, session)
 
     __id = 0
-    while True:
+    while session.is_active():
         try:
             if __id % 2 == 0:
                 await input(_id, ctx, session)
@@ -128,6 +134,8 @@ async def play_ai(ctx: commands.context.Context, _id: int):
             __id += 1
         except ValueError:
             pass
+
+    del session
 
 def check(_id: int):
     def inner_check(message: commands.context.Context):

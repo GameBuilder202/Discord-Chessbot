@@ -9,3 +9,11 @@ class Session:
 
         self.board = chess.Board()
 
+        self.running = True
+
+    def end(self):
+        self.running = False
+
+    def is_active(self) -> bool:
+        return self.running
+

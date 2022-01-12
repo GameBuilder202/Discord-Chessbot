@@ -5,6 +5,7 @@ import os
 import asyncio
 import chess
 import chess.svg
+import chess.engine
 from cairosvg import svg2png
 
 import game
@@ -81,6 +82,7 @@ async def input(_id: int, ctx: commands.context.Context, session: game.Session):
     msg: discord.message.Message = await bot.wait_for('message', check=check(_id))
     msg_content = msg.content
 
+    # Legal move checks
     try:
         move = chess.Move.from_uci(msg_content)
     except ValueError:
@@ -92,7 +94,10 @@ async def input(_id: int, ctx: commands.context.Context, session: game.Session):
         raise ValueError
 
     session.board.push(move)
-       
+    
+    if (out := session.board.outcome()) is not None:
+        pass
+           
 async def play_game(ctx: commands.context.Context, session: game.Session):
     _id = 0
 
